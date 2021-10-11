@@ -8,6 +8,7 @@
 #include "arp.h"
 #include "helper.h"
 
+
 #define BUFSIZE 2048
 #define SnifferSendArpPeriod 60
 #define SnifferGetPacketPeriod 10
@@ -26,9 +27,12 @@ private:
     void ProcessPacket(char*, int);
     void StartPcap();
     void SetPcapFilter(std::string);
-    void processArpPacket(struct pcap_pkthdr const* header, const u_char *);
-    void processIpPacket(struct pcap_pkthdr const* header, const u_char *);
-    void MonitorPcap( pcap_t *);
+    void processArpPacket(struct pcap_pkthdr const* header, const u_char*);
+    void processIpPacket(struct pcap_pkthdr const* header, const u_char*);
+    void processModbusPacket(const u_char*, int length);
+    void analyzeModbusPacket(const u_char*, int length);
+    void MonitorPcap( pcap_t *);  
+    quint16 m_lastAddress{};
 
     NetworkTools networkTools;
     pcap_t *handle{nullptr};
