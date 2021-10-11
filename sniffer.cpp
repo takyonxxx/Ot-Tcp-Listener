@@ -194,6 +194,7 @@ void Sniffer::processIpPacket(struct pcap_pkthdr const* header, const u_char *pa
     int packet_len = header->len;
     int payload_len = packet_len - (sizeof(struct ether_header) + size_ip + size_tcp);
 
+    // modbus
     if (dstPort==502 && payload_len>0)
     {
         int offset = sizeof(struct ether_header) + size_ip + size_tcp;
