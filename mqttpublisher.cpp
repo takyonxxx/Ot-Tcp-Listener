@@ -83,13 +83,10 @@ void MqttPublisher::publish_asset_source(asset &_asset)
     data["sensor_name"] = _client.ifaceIp;
     data["ip"] = _asset.ip;
     data["mac"] = _asset.mac;
-    data["hostname"] = _asset.hostname;
-    data["nmap"] = _asset.nmap;
     data["created"] = cTime;
     data["lastseen"] = uTime;
     data["detection_method"] = _asset.adapterId;
     data["description"] = QString("ot asset");
-    data["event_type"] = _asset.eventType;
 
     QJsonObject payload{};
 
@@ -111,6 +108,12 @@ void MqttPublisher::publish_asset_source(asset &_asset)
 
 void MqttPublisher::update_asset_source(asset &_asset, double updateTime, bool update)
 {
+    if(!_client.authorized)
+    {
+        //Logger::getInstance()->write(QString("Sensor not authorized..."));
+        return;
+    }
+
     auto currentTime = static_cast<double>(QDateTime::currentMSecsSinceEpoch()/1000.0);
 
     auto it = asset_sources.find(_asset.ip);
@@ -125,7 +128,6 @@ void MqttPublisher::update_asset_source(asset &_asset, double updateTime, bool u
                 QLatin1String("Found Asset: ")
                 + QLatin1String("Ip: ") + _asset.ip
                 + QLatin1String(" Source: ") + _asset.adapterMode
-                + QLatin1String(" Host: ") + _asset.hostname
                 + QLatin1String(" Total: ") + QString::number(asset_sources.size());
         Logger::getInstance()->write(content);
 
@@ -137,17 +139,10 @@ void MqttPublisher::update_asset_source(asset &_asset, double updateTime, bool u
                 QLatin1String("Update Asset: ")
                 + QLatin1String("Ip: ") + _asset.ip
                 + QLatin1String(" Source: ") + _asset.adapterMode
-                + QLatin1String(" Host: ") + _asset.hostname
                 + QLatin1String(" Total: ") + QString::number(asset_sources.size());
 
         Logger::getInstance()->write(content);
-    }
-
-    if(!_client.authorized)
-    {
-        Logger::getInstance()->write(QString("Sensor not authorized..."));
-        return;
-    }
+    }  
 
     publish_asset_source(_asset);
 }

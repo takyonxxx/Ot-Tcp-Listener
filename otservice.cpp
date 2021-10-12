@@ -26,8 +26,8 @@ OtService::~OtService()
 
 void OtService::start()
 {
-    ot_listener->init();
-    logger->write("Ot service started...");
+    ot_listener->init();    
+    logger->write("Ot service started...");    
 }
 
 void OtService::pause()

@@ -5,7 +5,7 @@ OtListener::OtListener(QObject *parent, QString &_currentPath)
     : QObject(parent), m_authorized(false), currentPath(_currentPath)
 {
     qRegisterMetaType<asset>("asset");
-    settingsFile = currentPath + "/sensor.ini";    
+    settingsFile = currentPath + "/otlistener.ini";
 }
 
 OtListener::~OtListener()
@@ -36,8 +36,6 @@ void OtListener::init()
         }
     }
 
-    char username[LOGIN_NAME_MAX];
-    char osinfo[128] = {0};
     QString device, ip, mac, mask;
     std::string sVendor;
     QJsonObject vendor{};
@@ -51,47 +49,25 @@ void OtListener::init()
     auto netSegment = networkTools.geNetSegment(_ot_client.ifaceIp, mask) + "/24";
     _ot_client.netSegment = netSegment;
 
-    networkTools.getVendor(_ot_client.ifaceMac.toStdString(), sVendor);
-    if(!_ot_client.ifaceMac.isEmpty() && !sVendor.empty() && !QString(sVendor.c_str()).contains("errors"))
-    {
-        vendor[_ot_client.ifaceMac] = networkTools.cleanQString(sVendor.c_str());
-        _ot_client.vendor = (QJsonObject)(vendor);
-    }
-
-    _ot_client.hostName = networkTools.cleanQString(networkTools.getLocalHostName());
-    networkTools.getLoginName(username);
-    _ot_client.loginName = networkTools.cleanQString(username);
-    networkTools.getOsInfo(osinfo);
-    _ot_client.osInfo = networkTools.cleanQString(osinfo);
-    _ot_client.softwares = networkTools.getInstalledSoftware();
-
     const QString content =
-            QString("Client Info:\n   Uid : ") + _ot_client.uID + "\n"
+            QString("Ot Listener Info:\n   Uid : ") + _ot_client.uID + "\n"
             + QString("   Interface : ") + _ot_client.iface + "\n"
             + QString("   Ip : ") + _ot_client.ifaceIp + "\n"
             + QString("   Mac : ") + _ot_client.ifaceMac + "\n"
-            + QString("   Vendor : ") + sVendor.c_str() + "\n"
-            + QString("   Netsegment : ") + _ot_client.netSegment + "\n"
-            + QString("   Username : ") + _ot_client.loginName + "\n"
-            + QString("   MqttHost : ") + _ot_client.hostMqtt + "\n"
-            + QString("   MqttHost Port : ") + _ot_client.hostMqttPort + "\n"
-            + QString("   Hostaname : ") + _ot_client.hostName + "\n"
-            + QString("   Cert ca : ") + _ot_client.caFilePath + "\n"
-            + QString("   Cert crt : ") + _ot_client.clientCrtFilePath + "\n"
-            + QString("   Cert key : ") + _ot_client.clientKeyFilePath + "\n"
-            + QString("   Type : ") + _ot_client.type;
-
+            + QString("   Netsegment : ") + _ot_client.netSegment;
 
     Logger::getInstance()->write(content);
+
     Adapter *adapter = new Adapter(this, "id", "ip", _ot_client);
     adapterList.append(adapter);
+    Logger::getInstance()->write(QString("New Adapter [%1] added to sensor.").arg("ip"));
 
     /*mosqManager = new MosqManager(this, _ot_client);
     if(mosqManager)
     {
         connect (mosqManager, &MosqManager::mqttReceivedMessage, this, &OtListener::receivedMessage);
         mqttPublisher = new MqttPublisher(this, mosqManager, _ot_client);
-        mqttPublisher->start();        
+        mqttPublisher->start();
     }*/
 }
 
@@ -148,7 +124,7 @@ void OtListener::loadSettings()
     _ot_client.clientKeyFilePath = settings.value("clientKeyFilePath").toString();
     _ot_client.debug = StringToBool(settings.value("debug").toString());
     Logger::getInstance()->setDebug(_ot_client.debug);
-    Logger::getInstance()->write(QString("Load settings: sensor.ini"));
+    Logger::getInstance()->write(QString("Load settings: ") + settingsFile);
 }
 
 void OtListener::saveSettings()
@@ -162,7 +138,7 @@ void OtListener::saveSettings()
     settings.setValue("clientKeyFilePath", _ot_client.clientKeyFilePath);
     settings.setValue("debug", BoolToString(_ot_client.debug));
     Logger::getInstance()->setDebug(_ot_client.debug);
-    Logger::getInstance()->write(QString("Saved settings: sensor.ini"));
+    Logger::getInstance()->write(QString("Saved settings: ") + settingsFile);
 }
 
 void OtListener::receivedMessage(QMQTTMessage msg)
@@ -170,15 +146,15 @@ void OtListener::receivedMessage(QMQTTMessage msg)
     if(!mqttPublisher)
         return;
 
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(msg.payload.toUtf8());
+    printf("%s : %s\n", msg.topic.toUtf8().toStdString().c_str(), msg.payload.toUtf8().toStdString().c_str());
+
+    /*QJsonDocument jsonResponse = QJsonDocument::fromJson(msg.payload.toUtf8());
     QJsonObject jsonObject = jsonResponse.object();
 
     auto sensor = jsonObject.value("sensor").toString();
 
     if(!sensor.isEmpty() && sensor != _ot_client.ifaceIp)
         return;
-
-    //printf("%s : %s\n", msg.topic.toUtf8().toStdString().c_str(), msg.payload.toUtf8().toStdString().c_str());
 
     if(msg.topic == QString("uid"))
     {
@@ -235,7 +211,7 @@ void OtListener::receivedMessage(QMQTTMessage msg)
                 Logger::getInstance()->write(QString("New Adapter [%1] added to sensor. Total [%2]").arg (mode).arg(adapterList.size()));
             }
         }
-    }
+    }*/
 }
 
 Adapter *OtListener::getAdapter(QString& id)

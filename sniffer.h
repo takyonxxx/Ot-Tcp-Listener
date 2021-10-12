@@ -4,9 +4,12 @@
 #include <QObject>
 #include <QThread>
 #include <QByteArray>
+#include <QJsonObject>
+#include <QMap>
 #include "mqttpublisher.h"
 #include "arp.h"
 #include "helper.h"
+#include "modbus.h"
 
 
 #define BUFSIZE 2048
@@ -28,17 +31,15 @@ private:
     void StartPcap();
     void SetPcapFilter(std::string);
     void processArpPacket(struct pcap_pkthdr const* header, const u_char*);
-    void processIpPacket(struct pcap_pkthdr const* header, const u_char*);
-    void processModbusPacket(const u_char*, int length);
-    void analyzeModbusPacket(const u_char*, int length);
-    void MonitorPcap( pcap_t *);  
-    quint16 m_lastAddress{};
+    void processIpPacket(struct pcap_pkthdr const* header, const u_char*);    
+    void MonitorPcap( pcap_t *);
+    static void *arpLoop(void * this_ptr);
+
+    QJsonObject _data{};
 
     NetworkTools networkTools;
     pcap_t *handle{nullptr};
-    char error_buffer[PCAP_ERRBUF_SIZE]; /* Size defined in pcap.h */
-    std::map<QString, QString> asset_vendors{};
-    std::map<QString, QString> asset_hostnames{};
+    char error_buffer[PCAP_ERRBUF_SIZE]; /* Size defined in pcap.h */   
     bool m_stop{false};
     Arp arp_manager{};
     otclient &_client;
@@ -47,7 +48,6 @@ private:
     QStringList segmentIpList{};
     pthread_t snifferSendArpThread{};
     PythonScript *pythonScript{};
-    static void *arpLoop(void * this_ptr);
 
 protected:
     void run();

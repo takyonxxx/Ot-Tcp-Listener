@@ -70,15 +70,10 @@ struct _client {
     QString iface{};
     QString ifaceIp{};
     QString ifaceMac{};
-    QString netSegment{};
-    QString hostName{};
-    QString loginName{};
-    QJsonObject vendor{};
-    QString osInfo{};
+    QString netSegment{};   
     QString type{};
     QString hostMqtt{};
     QString hostMqttPort{};
-    QJsonArray softwares{};
     QString caFilePath{};
     QString clientCrtFilePath{};
     QString clientKeyFilePath{};
@@ -89,16 +84,12 @@ struct _client {
 typedef struct _asset asset;
 struct _asset {
     QString ip{};
-    QString mac{};
-    QString hostname{};
-    QString os{};
+    QString mac{};   
     QString category{};
     QString adapterId{};
     QString adapterMode{};
     QString netSegment{};
-    QString eventType{};
-    QJsonObject nmap{};
-    bool isClient{false};
+    QJsonObject otData{};
 };
 
 Q_DECLARE_METATYPE(asset)

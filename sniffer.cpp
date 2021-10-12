@@ -1,12 +1,9 @@
 #include "sniffer.h"
 #include "logger.h"
-#include "pythonscript.h"
 
 Sniffer::Sniffer(QObject *parent, otclient& client, QString &id, QString &mode)
     : QThread(parent), _client(client), m_id(id), m_mode(mode)
 {
-    pythonScript = PythonScript::getInstance();
-
     if(segmentIpList.length() == 0)
     {
         char* mask = (char *)"255.255.255.0";
@@ -35,7 +32,6 @@ Sniffer::Sniffer(QObject *parent, otclient& client, QString &id, QString &mode)
     std::string filter_exp = "tcp";
     StartPcap();
     SetPcapFilter(filter_exp);
-    Logger::getInstance()->write(QString("New Adapter [%1] added to sensor.").arg("mirror"));
 }
 
 Sniffer::~Sniffer()
@@ -155,172 +151,8 @@ void Sniffer::MonitorPcap( pcap_t * pcap )
     }
 }
 
-void Sniffer::analyzeModbusPacket(const u_char* packet, int length)
-{
-    if (length < 5)
-    {
-        //qWarning() << "Packet too short:" << length << "bytes";
-        return;
-    }
-
-    int function = packet[0];
-    QString functionName;
-
-    QDebug debug = qDebug();
-    debug.noquote();
-
-    switch (function & 127)
-    {
-    case 1:
-        functionName = "Read Coil Status";
-        break;
-
-    case 2:
-        functionName = "Read Input Status";
-        break;
-
-    case 3:
-        functionName = "Read Holding Registers";
-        break;
-
-    case 4:
-        functionName = "Read Input Registers";
-        break;
-
-    case 5:
-        functionName = "Force Single Coil";
-        break;
-
-    case 6:
-        functionName = "Preset Single Register";
-        break;
-
-    case 8:
-        functionName = "Diagnostics";
-        break;
-
-    case 15:
-        functionName = "Force Multiple Coils";
-        break;
-
-    case 16:
-        functionName = "Preset Multiple Registers";
-        break;
-
-    default:
-        functionName = "Unknown function";
-        break;
-    }
-
-    bool exception = function & 128;
-
-    if (exception)
-    {
-        debug << "Execption reply for " + functionName;
-    }
-    else
-    {
-        if (length < 8)
-        {
-            //qWarning() << "Packet too short:" << length << "bytes";
-            return;
-        }
-
-        int address = (packet[1] << 8 | packet[2]);
-        int points = (packet[3] << 8 | packet[4]);
-
-        if (function == 3 || function == 4)
-        {
-            if (length > 8)
-            {
-                debug << functionName + "\nReply\nData:\n";
-
-                for (int i = 0; i < packet[1] / 2; i++)
-                {
-                    quint16 value = ((packet[2 + i * 2] << 8) | packet[2 + i * 2 + 1]);
-                    debug << "" << (m_lastAddress + i) << ":" << (quint16) value << "(" << (qint16) value << ")\n";
-                }
-            }
-            else
-            {
-                debug << functionName + "\n";
-                debug << "  Start:" << address << "\n  Length:" << points;
-                m_lastAddress = address;
-            }
-        }
-        else if (function == 8)
-        {
-            debug << functionName + "\n";
-            quint16 subfunction = ((packet[1] << 8) | packet[2]);
-            debug << "  Subfunction:" << subfunction << "\n. Length:" << length;
-
-        }
-        else if (function == 16)
-        {
-            if (length > 8)
-            {
-                debug << functionName + "\n";
-                debug << "  Start:" << address << "\n  Length:" << points << "\nData:\n";
-
-                for (int i = 0; i < packet[5] / 2; i++)
-                {
-                    quint16 value = ((packet[6 + i * 2] << 8) | packet[6 + i * 2 + 1]);
-                    debug << "" << (address + i) << ":" << (quint16) value << "(" << (qint16) value << ")\n";
-                }
-            }
-            else
-            {
-                debug << functionName + " Reply OK\n";
-            }
-        }
-        else
-        {
-            debug << functionName;
-        }
-    }
-}
-
-
-void Sniffer::processModbusPacket(const u_char* packet, int length)
-{
-    auto modbus_tcp = (struct sniff_modbus_tcp*) (packet);
-    auto modbus_tcp_lenght = htons(modbus_tcp->lenght);
-
-    int remainig_len = length - ( modbus_tcp_lenght + sizeof(struct sniff_modbus_tcp) -1);
-
-    if(remainig_len < 0)
-        return;
-
-    int offset =  sizeof(struct sniff_modbus_tcp);
-    auto temp=(u_char*)malloc(modbus_tcp_lenght-1);
-    //memcpy(temp, packet + offset, modbus_tcp_lenght-1);
-    for (int i = 0; i < modbus_tcp_lenght-1; ++i)
-    {
-        temp[i] = (packet + offset)[i];
-    }
-    /*for(int i=0; i<modbus_tcp_lenght-1; i++) {
-        fprintf(stdout, "%02x ",temp[i]);
-    }
-    puts("");*/
-
-    analyzeModbusPacket(temp, modbus_tcp_lenght-1);
-
-    if(remainig_len > 0)
-    {
-        int offset =  modbus_tcp_lenght + sizeof(struct sniff_modbus_tcp) -1;
-        unsigned char* remainig=(unsigned char*)malloc( remainig_len);
-        //memcpy(remainig, packet + offset, remainig_len);
-        for (int i = 0; i < remainig_len; ++i)
-        {
-            remainig[i] = (packet + offset)[i];
-        }
-        processModbusPacket(remainig, remainig_len);
-    }
-}
-
 void Sniffer::processIpPacket(struct pcap_pkthdr const* header, const u_char* packet)
-{    
-    QMutexLocker locker(mutex);
+{        
     struct sniff_ethernet *eth_header{};
 
     //the ethernet header is always the same (14 bytes)
@@ -363,24 +195,60 @@ void Sniffer::processIpPacket(struct pcap_pkthdr const* header, const u_char* pa
 
         int offset = sizeof(struct ether_header) + size_ip + size_tcp;
         unsigned char* payload=(unsigned char*)malloc(payload_len);
-        memcpy(payload, packet + offset, payload_len);
+        //memcpy(payload, packet + offset, payload_len);
+        for (int i = 0; i < payload_len; ++i)
+        {
+            payload[i] = (packet + offset)[i];
+        }
 
         QString packet_type{};
 
         if (srcPort == PORT_MBTCP  && dstPort!=PORT_MBTCP )
-            packet_type = "MODBUS_RESPONSE_PACKET";
+            packet_type = "Modbus Response Packet";
         else if ( srcPort != PORT_MBTCP  &&  dstPort == PORT_MBTCP)
-            packet_type = "MODBUS_QUERY_PACKET";
+            packet_type = "Modbus Query Packet";
 
-        processModbusPacket(payload, payload_len);
+        _data= QJsonObject();
+        _data["srcIp"] = srcIp;
+        _data["dstIp"] = dstIp;
+        _data["srcMac"] = srcMac;
+        _data["dstMac"] = dstMac;
+        _data["srcPort"] = QString::number(srcPort);
+        _data["dstPort"] = QString::number(dstPort);
+        _data["packet_type"] = packet_type;
+        _data["packet_len"] = QString::number(packet_len);
+
+        Modbus modbus{};
+        QJsonObject modbus_data{};
+        modbus.processModbusPacket(payload, payload_len, modbus_data);
+
+        QJsonObject j_data(_data);
+        for (auto it = modbus_data.constBegin(); it != modbus_data.constEnd(); it++) {
+            j_data.insert(it.key(), it.value());
+        }
+
+        qDebug() << "Source Ip" << "\t" << j_data.value("srcIp").toString();
+        qDebug() << "Dest Ip" << "\t" << j_data.value("dstIp").toString();
+        qDebug() << "Source Mac" << "\t" << j_data.value("srcMac").toString();
+        qDebug() << "Dest Mac" << "\t" << j_data.value("dstMac").toString();
+        qDebug() << "Source Port" << "\t" << j_data.value("srcPort").toString();
+        qDebug() << "Dest Port" << "\t" << j_data.value("dstPort").toString();
+        qDebug() << "Packet Type" << "\t" << j_data.value("packet_type").toString();
+        qDebug() << "Packet Lenght" << "\t" << j_data.value("packet_len").toString();
+        //qDebug() << "Modbus" << "\t" << j_data.value("modbus").toString();
+
+        auto splitted = j_data.value("modbus").toString().split(";");
+        foreach(const QString& value, splitted)
+        {
+            qDebug() << "\t" << value;
+        }
+        qDebug() << "";
     }
 
 }
 
 void Sniffer::processArpPacket(struct pcap_pkthdr const* header, const u_char* packet)
 {
-    QMutexLocker locker(mutex);
-
     struct ether_arp * arp_packet{};
 
     arp_packet = (struct ether_arp *)(packet + sizeof(struct ether_header));
@@ -408,54 +276,15 @@ void Sniffer::processArpPacket(struct pcap_pkthdr const* header, const u_char* p
         auto srcIp = QString(sip.c_str());
         auto srcMac = QString(smac.c_str());
 
-        if(validateIP(srcIp.toStdString()) && _client.ifaceIp != srcIp)
-        {
-            asset m_asset{};
-            QString hostname{};
-            QJsonObject vendor{};
+        asset m_asset{};
 
-            m_asset.ip = srcIp;
-            m_asset.mac = srcMac;
-            m_asset.adapterId = m_id;
-            m_asset.adapterMode = m_mode;
-            m_asset.eventType = "arp packet";
+        m_asset.ip = srcIp;
+        m_asset.mac = srcMac;
+        m_asset.adapterId = m_id;
+        m_asset.adapterMode = m_mode;
 
-            auto it = asset_hostnames.find(m_asset.ip);
-            if (it == asset_hostnames.end())
-            {
-                auto hostname = QString(networkTools.getHostName(m_asset.ip));
-                if(!hostname.isEmpty())
-                {
-                    asset_hostnames.insert (std::pair<QString, QString>(m_asset.ip, hostname));
-                    m_asset.hostname = hostname;
-                }
-            }
-            else
-            {
-                hostname = it->second;
-            }
-
-            it = asset_vendors.find(m_asset.ip);
-            if (it == asset_vendors.end())
-            {
-                std::string sVendor;
-
-                networkTools.getVendor(m_asset.mac.toStdString(), sVendor);
-                if(!sVendor.empty() && !QString(sVendor.c_str()).contains("errors"))
-                {
-                    vendor[m_asset.mac] = sVendor.c_str();
-                    m_asset.nmap["vendor"] = vendor;
-                    asset_vendors.insert (std::pair<QString, QString>(m_asset.ip, sVendor.c_str()));
-                }
-            }
-            else
-            {
-                vendor[m_asset.mac] = it->second;
-                m_asset.nmap["vendor"] = vendor;
-            }
-
+        if(MqttPublisher::getInstance())
             MqttPublisher::getInstance()->update_asset(m_asset);
-        }
     }
 }
 

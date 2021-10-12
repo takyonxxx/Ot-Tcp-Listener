@@ -22,64 +22,37 @@ SOURCES += \
         adapter.cpp \
         logger.cpp \
         main.cpp \
+        modbus.cpp \
         mosqmanager.cpp \
         mqttpublisher.cpp \
         otlistener.cpp \
         otservice.cpp \
-        pythonscript.cpp \
-        qmqtt.cpp
+        qmqtt.cpp \
+        sniffer.cpp
 
 HEADERS += \
     adapter.h \
-    emb.h \
     helper.h \
     httprequest.h \
     logger.h \
+    modbus.h \
     mosqmanager.h \
     mqttpublisher.h \
     networktools.h \
     otlistener.h \
     otservice.h \
     arp.h \
-    pythonscript.h \
-    qmqtt.h
+    qmqtt.h \
+    sniffer.h
 
 include($$PWD/qtservice/src/qtservice.pri)
-
-
-unix:!mac{
-    SOURCES += sniffer.cpp arp.h
-    HEADERS += sniffer.h
-}
 
 RESOURCES += \
     resources.qrc
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-    TARGET_ARCH=$${QT_ARCH}
-} else {
-    TARGET_ARCH=$${QMAKE_HOST.arch}
-}
-
-macx{
-    message("Macx enabled")
-    QMAKE_INCDIR += /usr/local/opt/mosquitto/include
-    LIBS += -L/usr/local/opt/mosquitto/lib -lmosquitto
-}
-
-unix:!macx{
-    message("Unix enabled")
-    QMAKE_INCDIR += $$PWD/libs/Mosquitto/x64/include
-    QMAKE_INCDIR += /usr/include/python3.8
-    QMAKE_LIBDIR += /usr/lib /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-    LIBS += -lmosquitto
-    LIBS += -lpython3.8
-    LIBS += -lpcap
-}
-
-#brew install mosquitto
-#brew install qt5
-#brew link qt5 --force
+QMAKE_LIBDIR += /usr/lib /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+LIBS += -lmosquitto
+LIBS += -lpcap
 
 #sudo apt install -y qt5-default
 #sudo apt install -y mosquitto-clients
