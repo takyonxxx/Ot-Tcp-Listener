@@ -14,20 +14,17 @@ class Adapter : public QObject
     Q_OBJECT
 
 public:
-    Adapter(QObject* parent, QString, QString ,otclient&);
+    Adapter(QObject* parent, otclient&);
     ~Adapter();
 
-    QString getKey() const;
     void stopLoop();
+    void setPause(bool);
 private:
 #if (defined (Q_OS_LINUX))
     Sniffer *sniffer{};
 #endif
 
     otclient &_client;
-
-    QString m_id{};
-    QString m_mode{};
 
 protected:
     void run();

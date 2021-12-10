@@ -62,14 +62,14 @@ QString Modbus::analyzeModbusPacket(const u_char* packet, int length, QString id
         break;
     }
 
-    QStringList reply{};       
+    QStringList reply{};
     reply.append("Function:" + functionName);
 
 
     bool exception = function & 128;
 
     if (exception)
-    {        
+    {
     }
     else
     {
@@ -111,7 +111,7 @@ QString Modbus::analyzeModbusPacket(const u_char* packet, int length, QString id
                     quint16 value = ((packet[6 + i * 2] << 8) | packet[6 + i * 2 + 1]);
                     reply.append(QString::number(address + i) + ":" + QString::number((qint16) value));
                 }
-            }          
+            }
         }
 
         return reply.join(";");
@@ -155,7 +155,7 @@ void Modbus::processModbusPacket(const u_char* packet, int length, QJsonObject &
             remainig[i] = (packet + offset)[i];
         }
         processModbusPacket(remainig, remainig_len, modbus_data);
-    }   
+    }
     else
     {
         modbus_data["modbus"] = data.join(";");

@@ -1,8 +1,8 @@
 #include "sniffer.h"
 #include "logger.h"
 
-Sniffer::Sniffer(QObject *parent, otclient& client, QString &id, QString &mode)
-    : QThread(parent), _client(client), m_id(id), m_mode(mode)
+Sniffer::Sniffer(QObject *parent, otclient& client)
+    : QThread(parent), _client(client)
 {
     if(segmentIpList.length() == 0)
     {
@@ -152,7 +152,7 @@ void Sniffer::MonitorPcap( pcap_t * pcap )
 }
 
 void Sniffer::processIpPacket(struct pcap_pkthdr const* header, const u_char* packet)
-{        
+{
     struct sniff_ethernet *eth_header{};
 
     //the ethernet header is always the same (14 bytes)
@@ -276,15 +276,6 @@ void Sniffer::processArpPacket(struct pcap_pkthdr const* header, const u_char* p
         auto srcIp = QString(sip.c_str());
         auto srcMac = QString(smac.c_str());
 
-        asset m_asset{};
-
-        m_asset.ip = srcIp;
-        m_asset.mac = srcMac;
-        m_asset.adapterId = m_id;
-        m_asset.adapterMode = m_mode;
-
-        if(MqttPublisher::getInstance())
-            MqttPublisher::getInstance()->update_asset(m_asset);
     }
 }
 

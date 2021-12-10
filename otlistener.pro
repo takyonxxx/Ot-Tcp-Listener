@@ -18,32 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += \
-        adapter.cpp \
-        logger.cpp \
-        main.cpp \
-        modbus.cpp \
-        mosqmanager.cpp \
-        mqttpublisher.cpp \
-        otlistener.cpp \
-        otservice.cpp \
-        qmqtt.cpp \
-        sniffer.cpp
 
-HEADERS += \
-    adapter.h \
-    helper.h \
-    httprequest.h \
-    logger.h \
-    modbus.h \
-    mosqmanager.h \
-    mqttpublisher.h \
-    networktools.h \
-    otlistener.h \
-    otservice.h \
-    arp.h \
-    qmqtt.h \
-    sniffer.h
 
 include($$PWD/qtservice/src/qtservice.pri)
 
@@ -67,3 +42,26 @@ LIBS += -lpcap
 #sudo tcpdump -nni wlp5s0 arp
 
 #sudo kill $(lsof -t -i:9000)
+
+HEADERS += \
+    adapter.h \
+    arp.h \
+    helper.h \
+    httprequest.h \
+    logger.h \
+    modbus.h \
+    networktools.h \
+    otlistener.h \
+    otservice.h \
+    sniffer.h
+
+SOURCES += \
+    adapter.cpp \
+    logger.cpp \
+    main.cpp \
+    modbus.cpp \
+    otlistener.cpp \
+    otservice.cpp \
+    sniffer.cpp
+
+

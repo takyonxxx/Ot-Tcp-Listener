@@ -66,17 +66,11 @@ bool Contains( std::list<T>& List, const T& Element )
 
 typedef struct _client otclient;
 struct _client {
-    QString uID{};
     QString iface{};
     QString ifaceIp{};
     QString ifaceMac{};
-    QString netSegment{};   
+    QString netSegment{};
     QString type{};
-    QString hostMqtt{};
-    QString hostMqttPort{};
-    QString caFilePath{};
-    QString clientCrtFilePath{};
-    QString clientKeyFilePath{};
     bool authorized{false};
     bool debug{false};
 };
@@ -84,7 +78,7 @@ struct _client {
 typedef struct _asset asset;
 struct _asset {
     QString ip{};
-    QString mac{};   
+    QString mac{};
     QString category{};
     QString adapterId{};
     QString adapterMode{};

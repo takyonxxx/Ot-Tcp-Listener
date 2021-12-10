@@ -1,16 +1,11 @@
 #include "adapter.h"
 
-Adapter::Adapter(QObject *parent, QString id, QString mode, otclient &client)
-    : QObject(parent),  _client(client), m_id(id), m_mode(mode)
-{        
-    qRegisterMetaType<asset>("asset");
-
-#if (defined (Q_OS_LINUX))
-    if(m_mode == "ip")
-    {
-        sniffer = new Sniffer(this, _client, m_id, m_mode);
+Adapter::Adapter(QObject *parent, otclient &client)
+    : QObject(parent),  _client(client)
+{
+#if (defined (Q_OS_LINUX))    
+        sniffer = new Sniffer(this, _client);
         sniffer->start();
-    }
 #endif
 }
 
@@ -40,7 +35,16 @@ void Adapter::stopLoop()
 #endif
 }
 
-QString Adapter::getKey() const
+void Adapter::setPause(bool _pause)
 {
-    return m_id;
+    if (_pause && sniffer)
+    {
+        sniffer->stopLoop();
+        sniffer->quit(); //Tell the thread to abort
+        sniffer->wait(500); //We have to wait again here!
+    }
+    else if (!_pause && sniffer)
+    {
+        sniffer->start();
+    }
 }

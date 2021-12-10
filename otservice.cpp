@@ -14,7 +14,7 @@ OtService::OtService(int &argc, char **argv)
     QString fileName = currentPath + "/ot_log.txt";
 
     logger = new Logger(nullptr, fileName, true, true);
-    ot_listener = new OtListener(nullptr, currentPath);
+    ot_listener = new OtListener(nullptr);
 }
 
 OtService::~OtService()
@@ -26,19 +26,19 @@ OtService::~OtService()
 
 void OtService::start()
 {
-    ot_listener->init();    
-    logger->write("Ot service started...");    
+    ot_listener->init();
+    logger->write("Ot service started...");
 }
 
 void OtService::pause()
 {
-    ot_listener->pause();
+    ot_listener->setPause(true);
     logger->write("Ot service paused...");
 }
 
 void OtService::resume()
 {
-    ot_listener->resume();
+    ot_listener->setPause(false);
     logger->write("Ot service resumed...");
 }
 
